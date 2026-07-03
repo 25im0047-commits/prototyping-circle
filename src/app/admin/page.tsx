@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, getRedirectResult, signOut, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import AdminLogin from '@/components/admin/AdminLogin';
 import SurveyResults from '@/components/admin/SurveyResults';
@@ -13,6 +13,9 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // リダイレクト後の認証結果を処理（エラーがあればログに残す）
+    getRedirectResult(auth).catch((e) => console.error('Redirect result error:', e));
+
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
       setAuthState(u ? 'authenticated' : 'unauthenticated');

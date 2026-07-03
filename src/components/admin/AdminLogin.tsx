@@ -1,15 +1,11 @@
 'use client';
 
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithRedirect } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 
 export default function AdminLogin() {
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (e) {
-      console.error('Login error:', e);
-    }
+  const handleLogin = () => {
+    signInWithRedirect(auth, googleProvider);
   };
 
   return (
