@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, getRedirectResult, signOut, type User } from 'firebase/auth';
+import { getRedirectResult, onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import AdminLogin from '@/components/admin/AdminLogin';
 import SurveyResults from '@/components/admin/SurveyResults';
@@ -11,14 +11,33 @@ type AuthState = 'loading' | 'unauthenticated' | 'authenticated';
 export default function AdminPage() {
   const [authState, setAuthState] = useState<AuthState>('loading');
   const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
-    // リダイレクト後の認証結果を処理（エラーがあればログに残す）
-    getRedirectResult(auth).catch((e) => console.error('Redirect result error:', e));
+    getRedirectResult(auth).catch((e: unknown) => {
+      console.error('Redirect login error:', e);
+      const code =
+        typeof e === 'object' && e && 'code' in e ? String((e as { code?: string }).code) : undefined;
+
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          'Firebase Authentication の承認済みドメインに現在の公開URLが追加されていません。'
+        );
+        return;
+      }
+
+      if (code === 'auth/operation-not-allowed') {
+        setAuthError('Firebase Authentication で Google ログインが有効化されていません。');
+        return;
+      }
+
+      setAuthError('ログイン処理に失敗しました。Firebase Authentication の設定を確認してください。');
+    });
 
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
       setAuthState(u ? 'authenticated' : 'unauthenticated');
+      if (u) setAuthError('');
     });
   }, []);
 
@@ -31,7 +50,7 @@ export default function AdminPage() {
   }
 
   if (authState === 'unauthenticated') {
-    return <AdminLogin />;
+    return <AdminLogin error={authError} />;
   }
 
   return <AdminLayout user={user!} onLogout={() => signOut(auth)} />;
